@@ -1,12 +1,15 @@
 const fetch = require('node-fetch');
 const querystring = require('querystring');
 const parseCookies = require('cookie').parse;
-const {Actions, OrderTypes, TimeTypes, ProductTypes, Sort} = require('./constants');
 const omitBy = require('lodash/omitBy');
 const omit = require('lodash/omit');
 const isNil = require('lodash/isNil');
+const moment = require('moment');
 const fromPairs = require('lodash/fromPairs');
-const {lcFirst} = require('./utils');
+const {
+    Actions, OrderTypes, TimeTypes,
+    ProductTypes, Sort
+} = require('./constants');
 
 const BASE_TRADER_URL = 'https://trader.degiro.nl';
 
@@ -75,6 +78,18 @@ const create = ({
             }
             throw Error('Bad result: ' + JSON.stringify(data));
         });
+    };
+
+    /**
+    * Get historical transactions
+    */
+    const getTransactions = (options = {}) => {
+        let { startDate, endDate } = options;
+        startDate = moment(startDate).format('DD/MM/YYYY');
+        endDate = moment(endDate).format('DD/MM/YYYY');
+        return fetch(
+            `${urls.reportingUrl}/v6/accountoverview?intAccount=${session.account}&sessionId=${session.id}&fromDate=${startDate}&toDate=${endDate}`
+        ).then(res => res.json());
     };
 
     /**
@@ -290,7 +305,7 @@ const create = ({
             loginButtonUniversal: '',
             queryParams: {reason: 'session_expired'},
         };
- 
+
         if (oneTimePassword) {
             log('2fa token', oneTimePassword);
             url += '/totp';
@@ -299,7 +314,7 @@ const create = ({
 
         return sendLoginRequest(url, loginParams);
     }
- 
+
     const sendLoginRequest = (url, params) => {
         return fetch(url, {
                 method: 'POST',
@@ -491,6 +506,7 @@ const create = ({
         getProductsByIds,
         getClientInfo,
         updateConfig,
+        getTransactions,
         // properties
         session,
     };
